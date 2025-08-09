@@ -1,6 +1,7 @@
 import { supabase } from './supabase'
 
-export const saveViolation = async (userId, url, analysisResult) => {
+// For URL analysis
+export const saveViolationFromUrl = async (userId, url, analysisResult) => {
   try {
     const violationsCount = analysisResult.violations ? analysisResult.violations.length : 0
     const score = calculateAccessibilityScore(analysisResult)
@@ -11,6 +12,34 @@ export const saveViolation = async (userId, url, analysisResult) => {
         {
           user_id: userId,
           url: url,
+          html: null, // No HTML for URL analysis
+          result: analysisResult,
+          violations_count: violationsCount,
+          score: score
+        }
+      ])
+      .select()
+
+    if (error) throw error
+    return data[0]
+  } catch (error) {
+    console.error('Error saving URL violation:', error)
+    throw error
+  }
+}
+
+// For HTML analysis
+export const saveViolationFromHtml = async (userId, html, analysisResult) => {
+  try {
+    const violationsCount = analysisResult.violations ? analysisResult.violations.length : 0
+    const score = calculateAccessibilityScore(analysisResult)
+
+    const { data, error } = await supabase
+      .from('violations')
+      .insert([
+        {
+          user_id: userId,
+          url: null, // No URL for HTML analysis
           html: html,
           result: analysisResult,
           violations_count: violationsCount,
@@ -22,7 +51,7 @@ export const saveViolation = async (userId, url, analysisResult) => {
     if (error) throw error
     return data[0]
   } catch (error) {
-    console.error('Error saving violation:', error)
+    console.error('Error saving HTML violation:', error)
     throw error
   }
 }
