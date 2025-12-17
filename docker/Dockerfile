@@ -20,7 +20,6 @@ ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
 
 # Build the Next.js app with environment variables embedded
 RUN npm run build
-
 # Stage 2: Lightweight runtime with minimal Chromium setup
 FROM node:20-bullseye-slim
 
