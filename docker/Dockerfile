@@ -1,7 +1,14 @@
-# Stage 1: Build the Next.js App
+# Stage 1: Build the Next.js application
 FROM node:20-bullseye-slim AS builder
 
-# Accept build arguments for Supabase configuration
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+RUN npm ci
+
+# Copy source code
+COPY . .
+
 ARG NEXT_PUBLIC_SUPABASE_URL
 ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
 
@@ -9,16 +16,6 @@ ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
 ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
 ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-WORKDIR /app
-
-# Install dependencies
-COPY package.json package-lock.json ./
-RUN npm install
-
-# Copy source code
-COPY . .
-
-# Build the Next.js app with environment variables embedded
 RUN npm run build
 
 # Stage 2: Lightweight runtime with minimal Chromium setup
@@ -44,6 +41,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /tmp/* \
     && rm -rf /var/tmp/*
 
+# create non-root user
+RUN useradd -m -u 1001 appuser
+
+# change ownership
+RUN chown -R appuser:appuser /app
+
 # Set Puppeteer environment variables
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
@@ -55,6 +58,9 @@ COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/next.config.mjs ./next.config.mjs
+
+# switch to non-root user
+USER appuser
 
 EXPOSE 3000
 
